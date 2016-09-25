@@ -3,6 +3,7 @@ package br.inatel.carsecurity.Receiver;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.telephony.SmsMessage;
 import android.util.Log;
 import android.widget.Toast;
@@ -68,6 +69,9 @@ public class SMSReceiver extends BroadcastReceiver {
      * bar.
      */
     protected void showNotification(String address, String message) {
+        PackageManager pm = mContext.getPackageManager();
+        Intent launchIntent = pm.getLaunchIntentForPackage("br.inatel.carsecurity");
+        mContext.startActivity(launchIntent);
         Toast.makeText(mContext, address + ':' + message, Toast.LENGTH_LONG).show();
     }
 }

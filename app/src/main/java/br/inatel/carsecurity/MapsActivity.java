@@ -29,15 +29,15 @@ import com.google.android.gms.location.LocationServices;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
-    LocationRequest mLocationRequest;
-    GoogleApiClient mGoogleApiClient;
+    LocationRequest mLocationRequest = null;
+    GoogleApiClient mGoogleApiClient = null;
     Location mCurrentLocation = null;
     Location mLastLocation = null;
 
-    LatLng latLng;
-    GoogleMap mGoogleMap;
-    SupportMapFragment mFragment;
-    Marker currLocationMarker;
+    LatLng latLng = null;
+    GoogleMap mGoogleMap = null;
+    SupportMapFragment mFragment = null;
+    Marker currLocationMarker = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,7 +48,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
 
         askPermissions();
-        mapFragment.getMapAsync(this);
+        if(mGoogleMap == null) mapFragment.getMapAsync(this);
     }
 
     private void askPermissions() {
