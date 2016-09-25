@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.telephony.SmsMessage;
+import android.util.Log;
 import android.widget.Toast;
 
 /**
@@ -17,13 +18,14 @@ public class SMSReceiver extends BroadcastReceiver {
 
     // Retrieve SMS
     public void onReceive(Context context, Intent intent) {
+        Log.v(DEBUG_TAG, "Sucess!!!");
         mContext = context;
         mIntent = intent;
 
         String action = intent.getAction();
 
         if(action.equals(ACTION_SMS_RECEIVED)){
-            String address, str = "";
+            String address = "", str = "";
             SmsMessage[] msgs = getMessagesFromIntent(mIntent);
             if (msgs != null) {
                 for (int i = 0; i < msgs.length; i++) {
@@ -33,7 +35,7 @@ public class SMSReceiver extends BroadcastReceiver {
                 }
             }
 
-            showNotification(str);
+            showNotification(address, str);
             // ---send a broadcast intent to update the SMS received in the
             // activity---
             Intent broadcastIntent = new Intent();
@@ -65,7 +67,7 @@ public class SMSReceiver extends BroadcastReceiver {
      * The notification is the icon and associated expanded entry in the status
      * bar.
      */
-    protected void showNotification(String message) {
-        Toast.makeText(mContext, message, Toast.LENGTH_SHORT).show();
+    protected void showNotification(String address, String message) {
+        Toast.makeText(mContext, address + ':' + message, Toast.LENGTH_LONG).show();
     }
 }
