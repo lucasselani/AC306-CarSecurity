@@ -1,4 +1,4 @@
-package br.inatel.carsecurity.Receiver;
+package br.inatel.carsecurity.receiver;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -6,7 +6,8 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.telephony.SmsMessage;
 import android.util.Log;
-import android.widget.Toast;
+
+import br.inatel.carsecurity.provider.NumberManagement;
 
 /**
  * Created by lucas on 23/09/2016.
@@ -16,35 +17,32 @@ public class SMSReceiver extends BroadcastReceiver {
     private static final String ACTION_SMS_RECEIVED = "android.provider.Telephony.SMS_RECEIVED";
     private Context mContext;
     private Intent mIntent;
+    private NumberManagement mNumberManagement;
 
     // Retrieve SMS
     public void onReceive(Context context, Intent intent) {
-        Log.v(DEBUG_TAG, "Sucess!!!");
         mContext = context;
         mIntent = intent;
+        mNumberManagement = new NumberManagement(mContext);
 
         String action = intent.getAction();
 
         if(action.equals(ACTION_SMS_RECEIVED)){
-            String address = "", str = "";
+            String address, content = "";
             SmsMessage[] msgs = getMessagesFromIntent(mIntent);
+
             if (msgs != null) {
                 for (int i = 0; i < msgs.length; i++) {
                     address = msgs[i].getOriginatingAddress();
-                    str += msgs[i].getMessageBody();
-                    str += "\n";
+                    content += msgs[i].getMessageBody();
+
+                    if(address.equals(mNumberManagement.getCarNumber()) && !content.isEmpty()){
+                        notifyActivity(content);
+                        Log.v(DEBUG_TAG, address + ':' + content);
+                    }
                 }
             }
-
-            showNotification(address, str);
-            // ---send a broadcast intent to update the SMS received in the
-            // activity---
-            Intent broadcastIntent = new Intent();
-            broadcastIntent.setAction("SMS_RECEIVED_ACTION");
-            broadcastIntent.putExtra("sms", str);
-            context.sendBroadcast(broadcastIntent);
         }
-
     }
 
     public static SmsMessage[] getMessagesFromIntent(Intent intent) {
@@ -64,14 +62,15 @@ public class SMSReceiver extends BroadcastReceiver {
         return msgs;
     }
 
-    /**
-     * The notification is the icon and associated expanded entry in the status
-     * bar.
-     */
-    protected void showNotification(String address, String message) {
+    private void notifyActivity(String message) {
         PackageManager pm = mContext.getPackageManager();
         Intent launchIntent = pm.getLaunchIntentForPackage("br.inatel.carsecurity");
+        launchIntent.putExtra("latlgn", message);
         mContext.startActivity(launchIntent);
-        Toast.makeText(mContext, address + ':' + message, Toast.LENGTH_LONG).show();
+    }
+
+    private boolean validateMessage(String message){
+        String[] content = message.split(",");
+        return content.length > 2;
     }
 }

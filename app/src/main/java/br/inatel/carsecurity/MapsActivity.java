@@ -1,6 +1,7 @@
 package br.inatel.carsecurity;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.support.annotation.NonNull;
@@ -26,18 +27,23 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
+import br.inatel.carsecurity.provider.NumberManagement;
+
+
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
+    private final String DEBUG_TAG = getClass().getSimpleName();
     LocationRequest mLocationRequest = null;
     GoogleApiClient mGoogleApiClient = null;
     Location mCurrentLocation = null;
     Location mLastLocation = null;
 
-    LatLng latLng = null;
+    LatLng mCarLatLgn = null;
+    LatLng mCurrlatLng = null;
     GoogleMap mGoogleMap = null;
     SupportMapFragment mFragment = null;
-    Marker currLocationMarker = null;
+    Marker carLocationMarker = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,8 +53,37 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
 
-        askPermissions();
-        if(mGoogleMap == null) mapFragment.getMapAsync(this);
+        mapFragment.getMapAsync(this);
+        TEST_POPULATE();
+    }
+
+    private void TEST_POPULATE() {
+        NumberManagement mNumberManagement = new NumberManagement(this);
+        mNumberManagement.setCarNumber("+5535998346484");
+    }
+
+    private void getSmsExtras() {
+        Intent i = getIntent();
+        if(i.hasExtra("latlgn")){
+            String latlgn = i.getExtras().getString("latlgn");
+            String[] content = latlgn.split(",");
+            mCarLatLgn = new LatLng(Double.parseDouble(content[0]), Double.parseDouble(content[1]));
+            updateCarLocation();
+        }
+    }
+
+    private void updateCarLocation() {
+        if(mGoogleMap != null) mGoogleMap.clear();
+        MarkerOptions markerOptions = new MarkerOptions();
+        markerOptions.position(mCarLatLgn);
+        markerOptions.title("Localização do Carro");
+        markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA));
+        carLocationMarker = mGoogleMap.addMarker(markerOptions);
+
+        CameraPosition cameraPosition = new CameraPosition.Builder()
+                .target(mCarLatLgn).zoom(mGoogleMap.getMaxZoomLevel()).build();
+        mGoogleMap.animateCamera(CameraUpdateFactory
+                .newCameraPosition(cameraPosition));
     }
 
     private void askPermissions() {
@@ -67,13 +102,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mGoogleMap = googleMap;
+        askPermissions();
+
         try{
             mGoogleMap.setMyLocationEnabled(true);
         } catch (SecurityException se){
             se.printStackTrace();
         }
+
         buildGoogleApiClient();
         mGoogleApiClient.connect();
+        getSmsExtras();
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -94,27 +133,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Log.v("locationUpdates", "Gettins Last Location");
         try{
             mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-            if (mLastLocation != null) {
-                //place marker at current position
-                //mGoogleMap.clear();
-                latLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-                MarkerOptions markerOptions = new MarkerOptions();
-                markerOptions.position(latLng);
-                markerOptions.title("Current Position");
-                markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA));
-                currLocationMarker = mGoogleMap.addMarker(markerOptions);
+            mCurrlatLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+            CameraPosition cameraPosition = new CameraPosition.Builder()
+                    .target(mCurrlatLng).zoom(14).build();
+            mGoogleMap.animateCamera(CameraUpdateFactory
+                    .newCameraPosition(cameraPosition));
 
-                //zoom to current position:
-                CameraPosition cameraPosition = new CameraPosition.Builder()
-                        .target(latLng).zoom(mGoogleMap.getMaxZoomLevel()).build();
-
-                mGoogleMap.animateCamera(CameraUpdateFactory
-                        .newCameraPosition(cameraPosition));
-            }
         } catch (SecurityException se){
             mLastLocation = null;
         }
-
         try{
             Log.v("locationUpdates", "Gettins Current Location");
             mLocationRequest = new LocationRequest();
@@ -127,8 +154,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         } catch (SecurityException se){
             mCurrentLocation = null;
         }
-
-
     }
 
     @Override
@@ -143,30 +168,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onLocationChanged(Location location) {
-        //place marker at current position
-        //mGoogleMap.clear();
-        if (currLocationMarker != null) {
-            currLocationMarker.remove();
-        }
-        latLng = new LatLng(location.getLatitude(), location.getLongitude());
-        MarkerOptions markerOptions = new MarkerOptions();
-        markerOptions.position(latLng);
-        markerOptions.title("Current Position");
-        markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA));
-        currLocationMarker = mGoogleMap.addMarker(markerOptions);
-
-        Toast.makeText(this,"Location Changed", Toast.LENGTH_SHORT).show();
-
-        //zoom to current position:
-        CameraPosition cameraPosition = new CameraPosition.Builder()
-                .target(latLng).zoom(14).build();
-
-        mGoogleMap.animateCamera(CameraUpdateFactory
-                .newCameraPosition(cameraPosition));
-
-        //If you only need one location, unregister the listener
-        //LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
-
+        mCurrlatLng = new LatLng(location.getLatitude(), location.getLongitude());
+        Log.v(DEBUG_TAG, mCurrlatLng.toString());
     }
 
     @Override
