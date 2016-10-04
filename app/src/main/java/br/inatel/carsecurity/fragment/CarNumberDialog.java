@@ -9,7 +9,9 @@ import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import br.inatel.carsecurity.R;
 import br.inatel.carsecurity.provider.NumberManagement;
@@ -19,7 +21,8 @@ import br.inatel.carsecurity.provider.NumberManagement;
  */
 
 public class CarNumberDialog extends DialogFragment {
-    private int[] mEditTexts = {R.id.nacional_code, R.id.ddd, R.id.number};
+    private int[] mEditTextsIds = {R.id.nacional_code, R.id.ddd, R.id.number};
+    private EditText[] mEditTexts = new EditText[mEditTextsIds.length];
 
     /* The activity that creates an instance of this dialog fragment must
      * implement this interface in order to receive event callbacks.
@@ -39,36 +42,57 @@ public class CarNumberDialog extends DialogFragment {
         final View modifyView = inflater.inflate(R.layout.car_number_layout, null);
         builder.setView(modifyView);
 
-        builder.setPositiveButton("SALVAR", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int id) {
-                boolean ok = true;
-                String number = "";
-                for (int et : mEditTexts) {
-                    EditText editText = (EditText) modifyView.findViewById(et);
-                    if (editText.getText().toString().equals("")) {
-                        editText.setHint("Preencha este campo!");
-                        editText.setHintTextColor(Color.RED);
-                        ok = false;
-                    } else {
-                        editText.setHintTextColor(Color.BLACK);
-                        number += editText.getText().toString();
-                    }
-                }
+        for (int i=0; i<mEditTextsIds.length; i++)
+            mEditTexts[i] = (EditText) modifyView.findViewById(mEditTextsIds[i]);
 
-                if (ok) {
-                    NumberManagement mNumberManagement = new NumberManagement(getContext());
-                    mNumberManagement.setCarNumber(number);
-                }
-            }
+        builder.setPositiveButton("SALVAR", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) { }
         });
 
         builder.setNegativeButton("CANCELAR", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
+                Toast.makeText(getContext(), "Alterações descartadas com sucesso",
+                        Toast.LENGTH_LONG).show();
                 dismiss();
             }
         });
 
         // Create the AlertDialog object and return it
         return builder.create();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        AlertDialog alertDialog = (AlertDialog) getDialog();
+        if(alertDialog != null){
+            Button positiveButton = alertDialog.getButton(Dialog.BUTTON_POSITIVE);
+            positiveButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Boolean wantToCloseDialog = true;
+                    String number = "";
+
+                    for (EditText et : mEditTexts) {
+                        if (et.getText().toString().equals("")) {
+                            et.setHint("Preencha este campo!");
+                            et.setHintTextColor(Color.RED);
+                            wantToCloseDialog = false;
+                        } else {
+                            et.setHintTextColor(Color.GRAY);
+                            number += et.getText().toString();
+                        }
+                    }
+
+                    if (wantToCloseDialog) {
+                        NumberManagement mNumberManagement = new NumberManagement(getContext());
+                        mNumberManagement.setCarNumber(number);
+                        Toast.makeText(getContext(), "Número " + number + " salvo com sucesso",
+                                Toast.LENGTH_LONG).show();
+                        dismiss();
+                    }
+                }
+            });
+        }
     }
 }

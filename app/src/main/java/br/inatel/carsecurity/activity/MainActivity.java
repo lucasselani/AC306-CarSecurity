@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
+import android.os.PersistableBundle;
 import android.support.annotation.NonNull;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
@@ -29,6 +30,7 @@ import com.google.android.gms.location.LocationServices;
 
 import br.inatel.carsecurity.R;
 import br.inatel.carsecurity.fragment.CarNumberDialog;
+import br.inatel.carsecurity.fragment.SmsReceiveDialog;
 import br.inatel.carsecurity.provider.NumberManagement;
 import br.inatel.carsecurity.fragment.MapFragment;
 
@@ -51,12 +53,12 @@ public class MainActivity extends FragmentActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        mMapFragment = MapFragment.newInstance();
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.fragmentContainer, mMapFragment)
-                .commit();
-
-        //TEST_POPULATE();
+        if(askPermissions()){
+            mMapFragment = MapFragment.newInstance();
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragmentContainer, mMapFragment)
+                    .commit();
+        }
     }
 
     private void TEST_POPULATE() {
@@ -71,6 +73,7 @@ public class MainActivity extends FragmentActivity implements
             String[] content = latlgn.split(",");
             mCarLatLgn = new LatLng(Double.parseDouble(content[0]), Double.parseDouble(content[1]));
             mMapFragment.updateCarLocation(mCarLatLgn);
+            showAlarmDecisionDialog();
         }
     }
 
@@ -81,29 +84,38 @@ public class MainActivity extends FragmentActivity implements
         getSmsExtras();
     }
 
+    private void showAlarmDecisionDialog() {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        DialogFragment smsDialog = new SmsReceiveDialog();
+        smsDialog.show(fragmentManager, "Main");
+    }
+
     public void showNumberDialog(){
         FragmentManager fragmentManager = getSupportFragmentManager();
         DialogFragment numberDialog = new CarNumberDialog();
         numberDialog.show(fragmentManager, "Main");
     }
 
-    public void askPermissions() {
+    public boolean askPermissions() {
         Log.v("Main", "AskingPermissions");
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED ||
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
             String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION,
-                    Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS};
+                    Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS, Manifest.permission.CALL_PHONE};
             ActivityCompat.requestPermissions(this, permissions, 3030);
             Log.v("Main", "InsideIf");
         }
+        else return true;
+        return false;
     }
 
 
 
     protected synchronized void buildGoogleApiClient() {
-        Toast.makeText(this,"buildGoogleApiClient",Toast.LENGTH_SHORT).show();
+        Log.v("Main","buildGoogleApiClient");
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
@@ -125,8 +137,10 @@ public class MainActivity extends FragmentActivity implements
         Log.v("locationUpdates", "Gettins Last Location");
         try{
             mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-            mCurrlatLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-            mMapFragment.updateMap(mCurrlatLng);
+            if(mLastLocation != null){
+                mCurrlatLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
+                mMapFragment.updateMap(mCurrlatLng);
+            }
         } catch (SecurityException se){
             mLastLocation = null;
         }
@@ -161,13 +175,40 @@ public class MainActivity extends FragmentActivity implements
     }
 
     @Override
+    public void onSaveInstanceState(Bundle outState, PersistableBundle outPersistentState) {
+        //super.onSaveInstanceState(outState, outPersistentState);
+    }
+
+    @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        try {
-            mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-            Log.d("Main", "Successfully got location permission. Starting updates.");
-        } catch (SecurityException se) {
-             mCurrentLocation = null;
+        int permissionsNotGiven = 0;
+        for(int i=0; i<grantResults.length; i++){
+            if(grantResults[i] == -1) permissionsNotGiven++;
         }
+
+        if(permissionsNotGiven == 0){
+            try {
+                mMapFragment = MapFragment.newInstance();
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.fragmentContainer, mMapFragment)
+                        .commitAllowingStateLoss();
+                Log.d("Main", "Successfully got location permission. Starting updates.");
+            } catch (SecurityException se) {
+                mCurrentLocation = null;
+            }
+        }
+        else{
+            String[] missedPermissions = new String[permissionsNotGiven];
+            int cont = 0;
+            for(int i=0; i<grantResults.length; i++){
+                if(grantResults[i] == -1){
+                    missedPermissions[cont] = permissions[i];
+                    cont++;
+                }
+            }
+            ActivityCompat.requestPermissions(this, missedPermissions, 1010);
+        }
+
     }
 }
