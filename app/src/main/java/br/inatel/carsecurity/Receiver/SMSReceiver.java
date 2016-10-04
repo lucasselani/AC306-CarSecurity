@@ -65,6 +65,7 @@ public class SMSReceiver extends BroadcastReceiver {
     private void notifyActivity(String message) {
         PackageManager pm = mContext.getPackageManager();
         Intent launchIntent = pm.getLaunchIntentForPackage("br.inatel.carsecurity");
+        //launchIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
         launchIntent.putExtra("latlgn", message);
         mContext.startActivity(launchIntent);
     }

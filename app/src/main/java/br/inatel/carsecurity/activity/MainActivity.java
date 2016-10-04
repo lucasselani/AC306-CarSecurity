@@ -1,36 +1,39 @@
-package br.inatel.carsecurity;
+package br.inatel.carsecurity.activity;
 
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.location.Location;
 import android.support.annotation.NonNull;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.DialogFragment;
+import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationListener;
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
-import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
 
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
+import br.inatel.carsecurity.R;
+import br.inatel.carsecurity.fragment.CarNumberDialog;
 import br.inatel.carsecurity.provider.NumberManagement;
+import br.inatel.carsecurity.fragment.MapFragment;
 
 
-public class MapsActivity extends FragmentActivity implements OnMapReadyCallback,
+public class MainActivity extends FragmentActivity implements
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
     private final String DEBUG_TAG = getClass().getSimpleName();
@@ -41,20 +44,19 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     LatLng mCarLatLgn = null;
     LatLng mCurrlatLng = null;
-    GoogleMap mGoogleMap = null;
-    SupportMapFragment mFragment = null;
-    Marker carLocationMarker = null;
+    MapFragment mMapFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
-        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-                .findFragmentById(R.id.map);
+        mMapFragment = MapFragment.newInstance();
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragmentContainer, mMapFragment)
+                .commit();
 
-        mapFragment.getMapAsync(this);
-        TEST_POPULATE();
+        //TEST_POPULATE();
     }
 
     private void TEST_POPULATE() {
@@ -68,52 +70,37 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             String latlgn = i.getExtras().getString("latlgn");
             String[] content = latlgn.split(",");
             mCarLatLgn = new LatLng(Double.parseDouble(content[0]), Double.parseDouble(content[1]));
-            updateCarLocation();
+            mMapFragment.updateCarLocation(mCarLatLgn);
         }
     }
 
-    private void updateCarLocation() {
-        if(mGoogleMap != null) mGoogleMap.clear();
-        MarkerOptions markerOptions = new MarkerOptions();
-        markerOptions.position(mCarLatLgn);
-        markerOptions.title("Localização do Carro");
-        markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA));
-        carLocationMarker = mGoogleMap.addMarker(markerOptions);
-
-        CameraPosition cameraPosition = new CameraPosition.Builder()
-                .target(mCarLatLgn).zoom(mGoogleMap.getMaxZoomLevel()).build();
-        mGoogleMap.animateCamera(CameraUpdateFactory
-                .newCameraPosition(cameraPosition));
-    }
-
-    private void askPermissions() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.INTERNET) != PackageManager.PERMISSION_GRANTED){
-            String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION,
-                    Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS};
-            ActivityCompat.requestPermissions(this, permissions, 3030);
-        }
-    }
-
-
-    @Override
-    public void onMapReady(GoogleMap googleMap) {
-        mGoogleMap = googleMap;
-        askPermissions();
-
-        try{
-            mGoogleMap.setMyLocationEnabled(true);
-        } catch (SecurityException se){
-            se.printStackTrace();
-        }
-
+    public void mapReady(){
+        Log.v("Main", "MapReady");
         buildGoogleApiClient();
         mGoogleApiClient.connect();
         getSmsExtras();
     }
+
+    public void showNumberDialog(){
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        DialogFragment numberDialog = new CarNumberDialog();
+        numberDialog.show(fragmentManager, "Main");
+    }
+
+    public void askPermissions() {
+        Log.v("Main", "AskingPermissions");
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
+            String[] permissions = {Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS};
+            ActivityCompat.requestPermissions(this, permissions, 3030);
+            Log.v("Main", "InsideIf");
+        }
+    }
+
+
 
     protected synchronized void buildGoogleApiClient() {
         Toast.makeText(this,"buildGoogleApiClient",Toast.LENGTH_SHORT).show();
@@ -122,6 +109,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
     }
 
     @Override
@@ -134,11 +126,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         try{
             mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
             mCurrlatLng = new LatLng(mLastLocation.getLatitude(), mLastLocation.getLongitude());
-            CameraPosition cameraPosition = new CameraPosition.Builder()
-                    .target(mCurrlatLng).zoom(14).build();
-            mGoogleMap.animateCamera(CameraUpdateFactory
-                    .newCameraPosition(cameraPosition));
-
+            mMapFragment.updateMap(mCurrlatLng);
         } catch (SecurityException se){
             mLastLocation = null;
         }
