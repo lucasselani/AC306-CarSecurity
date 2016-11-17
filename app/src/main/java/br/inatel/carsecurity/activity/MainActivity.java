@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
 import android.os.PersistableBundle;
+import android.renderscript.Double2;
 import android.support.annotation.NonNull;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
@@ -66,12 +67,47 @@ public class MainActivity extends FragmentActivity implements
         mNumberManagement.setCarNumber("+5535998346484");
     }
 
+    private LatLng getLatLgnSms(String[] content){
+        for(String s : content) Log.v("msgContent: ", s);
+
+        String latitude = content[0].replaceFirst("^0+(?!$)", "");
+        String[] latitudeContent = latitude.split("\\.");
+        String degreeLat = latitudeContent[0].substring(0,2);
+        String minutesLat = latitudeContent[0].substring(2,4);
+        String secondsLat = latitudeContent[1].substring(0,2) + "." +
+                latitudeContent[1].substring(2,latitudeContent[1].length());
+        double degreeValue = Double.parseDouble(degreeLat);
+        double minutesValue = Double.parseDouble(minutesLat);
+        double secondsValue = Double.parseDouble(secondsLat);
+        double latitudeValue = degreeValue + ((60.0*minutesValue+secondsValue) / 3600.0);
+        if(content[1].equals("S")) latitudeValue *= -1;
+
+        String longitude = content[2].replaceFirst("^0+(?!$)", "");
+        String[] longitudeContent = longitude.split("\\.");
+        String degreeLgn = longitudeContent[0].substring(0,2);
+        String minutesLgn = longitudeContent[0].substring(2,4);
+        String secondsLgn = longitudeContent[1].substring(0,2) + "." +
+                longitudeContent[1].substring(2,longitudeContent[1].length());
+        degreeValue = Double.parseDouble(degreeLgn);
+        minutesValue = Double.parseDouble(minutesLgn);
+        secondsValue = Double.parseDouble(secondsLgn);
+        double longitudeValue = degreeValue + ((60.0*minutesValue+secondsValue) / 3600.0);
+        if(content[3].equals("W")) longitudeValue *= -1;
+
+        return new LatLng(latitudeValue, longitudeValue);
+    }
     private void getSmsExtras() {
         Intent i = getIntent();
         if(i.hasExtra("latlgn")){
             String latlgn = i.getExtras().getString("latlgn");
             String[] content = latlgn.split(",");
-            mCarLatLgn = new LatLng(Double.parseDouble(content[0]), Double.parseDouble(content[1]));
+            try{
+                if(content.length != 4) return;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            mCarLatLgn = getLatLgnSms(content);
             mMapFragment.updateCarLocation(mCarLatLgn);
             showAlarmDecisionDialog();
         }

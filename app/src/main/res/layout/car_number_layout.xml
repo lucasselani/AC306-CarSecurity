@@ -15,7 +15,8 @@
         android:hint="+55"
         android:textColorHint="@android:color/darker_gray"
         android:id="@+id/nacional_code"
-        android:inputType="phone"/>
+        android:inputType="phone"
+        android:maxLength="3"/>
 
     <TextView
         android:layout_width="match_parent"
@@ -28,7 +29,8 @@
         android:hint="35"
         android:textColorHint="@android:color/darker_gray"
         android:id="@+id/ddd"
-        android:inputType="phone"/>
+        android:inputType="phone"
+        android:maxLength="2"/>
 
     <TextView
         android:layout_width="match_parent"
@@ -41,6 +43,7 @@
         android:hint="998346484"
         android:textColorHint="@android:color/darker_gray"
         android:id="@+id/number"
-        android:inputType="phone"/>
+        android:inputType="phone"
+        android:maxLength="9"/>
 
 </LinearLayout>

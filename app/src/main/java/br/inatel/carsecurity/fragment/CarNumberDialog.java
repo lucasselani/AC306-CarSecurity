@@ -51,7 +51,8 @@ public class CarNumberDialog extends DialogFragment {
 
         builder.setNegativeButton("CANCELAR", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int id) {
-                Toast.makeText(getContext(), "Alterações descartadas com sucesso",
+                Toast.makeText(getContext(),
+                        "Alterações descartadas com sucesso.",
                         Toast.LENGTH_LONG).show();
                 dismiss();
             }
@@ -87,7 +88,8 @@ public class CarNumberDialog extends DialogFragment {
                     if (wantToCloseDialog) {
                         NumberManagement mNumberManagement = new NumberManagement(getContext());
                         mNumberManagement.setCarNumber(number);
-                        Toast.makeText(getContext(), "Número " + number + " salvo com sucesso",
+                        Toast.makeText(getContext(),
+                                "Número " + number + " salvo com sucesso",
                                 Toast.LENGTH_LONG).show();
                         dismiss();
                     }

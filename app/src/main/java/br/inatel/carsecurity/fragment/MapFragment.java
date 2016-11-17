@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
@@ -99,7 +100,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
                 .newCameraPosition(cameraPosition));
     }
 
-    public void updateCarLocation(LatLng latlgn) {
+    public void updateCarLocation(final LatLng latlgn) {
         if(mGoogleMap != null) mGoogleMap.clear();
         MarkerOptions markerOptions = new MarkerOptions();
         markerOptions.position(latlgn);
@@ -107,9 +108,16 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
         markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_MAGENTA));
         carLocationMarker = mGoogleMap.addMarker(markerOptions);
 
-        CameraPosition cameraPosition = new CameraPosition.Builder()
-                .target(latlgn).zoom(mGoogleMap.getMaxZoomLevel()).build();
-        mGoogleMap.animateCamera(CameraUpdateFactory
-                .newCameraPosition(cameraPosition));
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                CameraPosition cameraPosition = new CameraPosition.Builder()
+                        .target(latlgn).zoom(mGoogleMap.getMaxZoomLevel()).build();
+                mGoogleMap.animateCamera(CameraUpdateFactory
+                        .newCameraPosition(cameraPosition));
+            }
+        }, 1000);
+
+
     }
 }
