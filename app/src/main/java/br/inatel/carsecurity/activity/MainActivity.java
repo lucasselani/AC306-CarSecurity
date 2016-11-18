@@ -71,27 +71,19 @@ public class MainActivity extends FragmentActivity implements
         for(String s : content) Log.v("msgContent: ", s);
 
         String latitude = content[0].replaceFirst("^0+(?!$)", "");
-        String[] latitudeContent = latitude.split("\\.");
-        String degreeLat = latitudeContent[0].substring(0,2);
-        String minutesLat = latitudeContent[0].substring(2,4);
-        String secondsLat = latitudeContent[1].substring(0,2) + "." +
-                latitudeContent[1].substring(2,latitudeContent[1].length());
+        String degreeLat = latitude.substring(0,2);
+        String minutesLat = latitude.substring(2,latitude.length());
         double degreeValue = Double.parseDouble(degreeLat);
         double minutesValue = Double.parseDouble(minutesLat);
-        double secondsValue = Double.parseDouble(secondsLat);
-        double latitudeValue = degreeValue + ((60.0*minutesValue+secondsValue) / 3600.0);
+        double latitudeValue = degreeValue + (minutesValue / 60.0);
         if(content[1].equals("S")) latitudeValue *= -1;
 
         String longitude = content[2].replaceFirst("^0+(?!$)", "");
-        String[] longitudeContent = longitude.split("\\.");
-        String degreeLgn = longitudeContent[0].substring(0,2);
-        String minutesLgn = longitudeContent[0].substring(2,4);
-        String secondsLgn = longitudeContent[1].substring(0,2) + "." +
-                longitudeContent[1].substring(2,longitudeContent[1].length());
+        String degreeLgn = longitude.substring(0,2);
+        String minutesLgn = longitude.substring(2,longitude.length());
         degreeValue = Double.parseDouble(degreeLgn);
         minutesValue = Double.parseDouble(minutesLgn);
-        secondsValue = Double.parseDouble(secondsLgn);
-        double longitudeValue = degreeValue + ((60.0*minutesValue+secondsValue) / 3600.0);
+        double longitudeValue = degreeValue + (minutesValue / 60.0);
         if(content[3].equals("W")) longitudeValue *= -1;
 
         return new LatLng(latitudeValue, longitudeValue);
