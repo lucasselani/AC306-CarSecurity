@@ -112,7 +112,7 @@ public class MapFragment extends Fragment implements OnMapReadyCallback {
             @Override
             public void run() {
                 CameraPosition cameraPosition = new CameraPosition.Builder()
-                        .target(latlgn).zoom(mGoogleMap.getMaxZoomLevel()).build();
+                        .target(latlgn).zoom(17).build();
                 mGoogleMap.animateCamera(CameraUpdateFactory
                         .newCameraPosition(cameraPosition));
             }
